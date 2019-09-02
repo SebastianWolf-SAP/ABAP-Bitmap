@@ -66,7 +66,8 @@ CLASS zcl_bmp_bitmap DEFINITION
       _header          TYPE xstring,
       _data            TYPE xstring,
       _remaining_bytes TYPE xstring,
-      _converter       TYPE REF TO cl_abap_conv_out_ce.
+      " _converter       TYPE REF TO cl_abap_conv_out_ce,
+      _out_converter   TYPE REF TO if_abap_conv_out.
 
 
     METHODS:
@@ -95,7 +96,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_BMP_BITMAP IMPLEMENTATION.
+CLASS zcl_bmp_bitmap IMPLEMENTATION.
 
 
   METHOD add_pixel.
@@ -104,9 +105,9 @@ CLASS ZCL_BMP_BITMAP IMPLEMENTATION.
       g TYPE x LENGTH 1,
       b TYPE x LENGTH 1.
 
-    _converter->convert( EXPORTING data = i_pixel-r IMPORTING buffer = r ).
-    _converter->convert( EXPORTING data = i_pixel-g IMPORTING buffer = g ).
-    _converter->convert( EXPORTING data = i_pixel-b IMPORTING buffer = b ).
+    r = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = i_pixel-r ).
+    g = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = i_pixel-g ).
+    b = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = i_pixel-b ).
 
     CONCATENATE _data b g r INTO _data IN BYTE MODE.
 
@@ -127,37 +128,34 @@ CLASS ZCL_BMP_BITMAP IMPLEMENTATION.
 
   METHOD build_header.
     DATA magic_number TYPE x LENGTH 2.
-    _converter->convert( EXPORTING data = _co_magic_number_in_ascii IMPORTING buffer = magic_number ).
+    magic_number = _out_converter->convert( source = CONV #( _co_magic_number_in_ascii ) ).
 
     DATA file_size TYPE x LENGTH 4.
-    DATA(bmp_file_size_in_byte) = get_bmp_file_size( ).
-    _converter->convert( EXPORTING data = bmp_file_size_in_byte IMPORTING buffer = file_size ).
+    file_size = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = get_bmp_file_size( ) ).
 
     DATA offset TYPE x LENGTH 4.
-    _converter->convert( EXPORTING data = _co_header_size_in_byte IMPORTING buffer = offset ).
+    offset = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = _co_header_size_in_byte ).
 
     DATA dib_header_size TYPE x LENGTH 4.
-    _converter->convert( EXPORTING data = _co_dib_header_size_in_byte IMPORTING buffer = dib_header_size ).
+    dib_header_size = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = _co_dib_header_size_in_byte ).
 
     DATA image_width TYPE x LENGTH 4.
-    _converter->convert( EXPORTING data = me->image_width_in_pixel IMPORTING buffer = image_width ).
+    image_width = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = me->image_width_in_pixel ).
 
     DATA image_height TYPE x LENGTH 4.
-    _converter->convert( EXPORTING data = me->image_height_in_pixel IMPORTING buffer = image_height ).
+    image_height = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = me->image_height_in_pixel ).
 
     DATA num_color_palates TYPE x LENGTH 2.
-    _converter->convert( EXPORTING data = _co_num_color_palettes IMPORTING buffer = num_color_palates ).
+    num_color_palates = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = _co_num_color_palettes ).
 
     DATA bits_per_pixel TYPE x LENGTH 2.
-    _converter->convert( EXPORTING data = _bits_per_pixel IMPORTING buffer = bits_per_pixel ).
+    bits_per_pixel = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = _bits_per_pixel ).
 
     DATA raw_bitmap_size TYPE x LENGTH 4.
-    DATA raw_bitmap_size_in_int TYPE int4.
-    raw_bitmap_size_in_int = bmp_file_size_in_byte - _co_header_size_in_byte.
-    _converter->convert( EXPORTING data = raw_bitmap_size_in_int IMPORTING buffer = raw_bitmap_size ).
+    raw_bitmap_size = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = get_bmp_file_size( ) - _co_header_size_in_byte ).
 
     DATA print_resolution TYPE x LENGTH 4.
-    _converter->convert( EXPORTING data = _co_print_resolution IMPORTING buffer = print_resolution ).
+    print_resolution = lcl_conversion_helper=>int4_to_hex_in_little_endian( i_number = _co_print_resolution ).
 
     CONCATENATE magic_number
                 file_size
@@ -188,7 +186,8 @@ CLASS ZCL_BMP_BITMAP IMPLEMENTATION.
 
     precalc_empty_remaining_bytes( ).
 
-    _converter = cl_abap_conv_out_ce=>create( endian = cl_abap_char_utilities=>endian ).
+    "_converter = cl_abap_conv_out_ce=>create( endian = cl_abap_char_utilities=>endian ).
+    _out_converter = cl_abap_conv_codepage=>create_out( ).
   ENDMETHOD.
 
 

@@ -5,7 +5,7 @@ CLASS zcl_bmp_manifest DEFINITION
 
   PUBLIC SECTION.
     INTERFACES:
-      zif_apack_manifest.
+      if_apack_manifest.
 
 
     METHODS:
@@ -17,7 +17,7 @@ ENDCLASS.
 
 CLASS zcl_bmp_manifest IMPLEMENTATION.
   METHOD constructor.
-    zif_apack_manifest~descriptor = VALUE #(
+    if_apack_manifest~descriptor = VALUE #(
       group_id = 'pixelbaker.com'
       artifact_id = 'abap-bitmap'
       version = '1.0.0'
